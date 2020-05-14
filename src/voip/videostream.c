@@ -681,7 +681,9 @@ static void configure_video_source(VideoStream *stream, bool_t skip_bitrate, boo
 
 	if (is_player){
 		vconf.fps=pf.fmt->fps;
-		if (vconf.fps==0) vconf.fps=15;
+		// if (vconf.fps==0) vconf.fps=15;
+		if (vconf.fps==0) vconf.fps=30;
+		printf("====Setting sent vsize=%ix%i, fps=%f\n",vconf.vsize.width,vconf.vsize.height,vconf.fps);
 	}else{
 		if (stream->forced_fps!=0)
 			vconf.fps=stream->forced_fps;
@@ -870,6 +872,7 @@ int video_stream_start_from_io(VideoStream *stream, RtpProfile *profile, const c
 	MSFilter *source = NULL;
 	MSFilter *output = NULL;
 	MSFilter *recorder = NULL;
+	int loop = 1;
 
 	if (stream->ms.state != MSStreamInitialized){
 		ms_error("VideoStream in bad state");
@@ -897,8 +900,11 @@ int video_stream_start_from_io(VideoStream *stream, RtpProfile *profile, const c
 				}
 				stream->source = source;
 				if (io->input.file) {
-					if (video_stream_open_remote_play(stream, io->input.file)!=NULL)
+					if (video_stream_open_remote_play(stream, io->input.file)!=NULL){
+						ms_filter_call_method(stream->source, MS_PLAYER_SET_LOOP, &loop);
 						ms_filter_call_method_noarg(source, MS_PLAYER_START);
+						// printf("====VIDEO_PLAYER_START_LOOP\n");
+					}
 				}
 			break;
 			default:
@@ -925,6 +931,7 @@ int video_stream_start_from_io(VideoStream *stream, RtpProfile *profile, const c
 				stream->recorder_output = recorder;
 				ms_filter_add_notify_callback(recorder, video_recorder_handle_event, stream, TRUE);
 				if (io->output.file) video_stream_open_remote_record(stream, io->output.file);
+				printf("====video_stream_open_remote_record\n");
 			break;
 			default:
 				/*will just display in all other cases*/
@@ -1170,6 +1177,9 @@ static int video_stream_start_with_source_and_output(VideoStream *stream, RtpPro
 		}
 	}
 
+	if (output == NULL) {
+		printf("====null output\n");
+	}
 	/* Plumb the incoming stream */
 	if (output != NULL) {
 		rtp_output = (ms_filter_get_id(output) == MS_RTP_SEND_ID) ? TRUE : FALSE;
@@ -1184,6 +1194,7 @@ static int video_stream_start_with_source_and_output(VideoStream *stream, RtpPro
 		if (!rtp_output) {
 			/* create decoder first */
 			stream->ms.decoder=ms_factory_create_decoder(stream->ms.factory, pt->mime_type);
+			printf("====create decoder first\n");
 			if (stream->ms.decoder==NULL){
 				/* big problem: we don't have a registered decoderfor this payload...*/
 				ms_error("videostream.c: No decoder available for payload %i:%s.",payload,pt->mime_type);
@@ -1202,6 +1213,7 @@ static int video_stream_start_with_source_and_output(VideoStream *stream, RtpPro
 
 			if ((output == NULL) || (ms_filter_get_id(output) != MS_RTP_SEND_ID)) {
 				/* Check if the decoding filter can perform the rendering */
+				printf("====check rendering\n");
 				decoding_support.mime_type = pt->mime_type;
 				decoding_support.supported = FALSE;
 				ms_filter_call_method(stream->ms.decoder, MS_VIDEO_DECODER_SUPPORT_RENDERING, &decoding_support);
@@ -1218,12 +1230,14 @@ static int video_stream_start_with_source_and_output(VideoStream *stream, RtpPro
 			} else {
 				/* Create default display filter */
 				stream->output = ms_factory_create_filter_from_name(stream->ms.factory, stream->display_name);
+				printf("====define stream->output\n");
 			}
 		}
 
 		/* Don't allow null output */
 		if(stream->output == NULL) {
-			ms_fatal("No video display filter could be instantiated. Please check build-time configuration");
+			printf("====No use video display filter\n");
+			// ms_fatal("No video display filter could be instantiated. Please check build-time configuration");
 		}
 
 
@@ -1256,11 +1270,13 @@ static int video_stream_start_with_source_and_output(VideoStream *stream, RtpPro
 
 			/*configure the display window */
 			if(stream->output != NULL) {
+			// if(0) {
 				int autofit = 1;
 				//Use default size. If output supports it, it should resize automatically after first received frame
 				disp_size.width=MS_VIDEO_SIZE_CIF_W;
 				disp_size.height=MS_VIDEO_SIZE_CIF_H;
 
+				printf("====configure the display window\n");
 				ms_filter_call_method(stream->output,MS_FILTER_SET_VIDEO_SIZE,&disp_size);
 
 				/* if pixconv is used, force yuv420 */
@@ -1285,6 +1301,7 @@ static int video_stream_start_with_source_and_output(VideoStream *stream, RtpPro
 			}
 		}
 
+		printf("====connect filters\n");
 		/* and connect the filters */
 		ms_connection_helper_start (&ch);
 		ms_connection_helper_link (&ch,stream->ms.rtprecv,-1,0);
@@ -1307,6 +1324,7 @@ static int video_stream_start_with_source_and_output(VideoStream *stream, RtpPro
 		if (stream->tee!=NULL && stream->output!=NULL && stream->output2==NULL) {
 			//Don't add the preview output if the source is encoded. We could also add a decoding step here
 			if (stream->source_performs_encoding == FALSE) {
+				printf("====Don't add the preview output\n");
 				ms_filter_link(stream->tee,1,stream->output,1);
 			}
 		}

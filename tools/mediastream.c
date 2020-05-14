@@ -703,7 +703,8 @@ void setup_media_streams(MediastreamDatas* args) {
 		bctbx_set_log_file(args->logfile);
 
 	if (args->is_verbose) {
-		bctbx_set_log_level(BCTBX_LOG_DOMAIN, BCTBX_LOG_DEBUG);
+		bctbx_set_log_level(BCTBX_LOG_DOMAIN, BCTBX_LOG_ERROR);
+		// bctbx_set_log_level(BCTBX_LOG_DOMAIN, BCTBX_LOG_DEBUG);
 	} else {
 		bctbx_set_log_level(BCTBX_LOG_DOMAIN, BCTBX_LOG_MESSAGE);
 	}
@@ -917,9 +918,9 @@ void setup_media_streams(MediastreamDatas* args) {
 
 	}else{
 #ifdef VIDEO_ENABLED
-		float zoom[] = {
-			args->zoom,
-			args->zoom_cx, args->zoom_cy };
+		// float zoom[] = {
+		// 	args->zoom,
+		// 	args->zoom_cx, args->zoom_cy };
 		MSMediaStreamIO iodef = MS_MEDIA_STREAM_IO_INITIALIZER;
 
 		if (args->eq){
@@ -979,7 +980,7 @@ void setup_media_streams(MediastreamDatas* args) {
 					);
 		args->session=args->video->ms.sessions.rtp_session;
 
-		ms_filter_call_method(args->video->output,MS_VIDEO_DISPLAY_ZOOM, zoom);
+		// ms_filter_call_method(args->video->output,MS_VIDEO_DISPLAY_ZOOM, zoom);
 
 		if (args->two_windows) {
 			// Always enable mirroring for output 2

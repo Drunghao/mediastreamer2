@@ -1356,6 +1356,7 @@ AudioStream *audio_stream_start_with_sndcards(MSFactory* factory, RtpProfile *pr
 
 // Pass NULL to stop playing
 void audio_stream_play(AudioStream *st, const char *name){
+	int loop = 1;
 	if (st->soundread == NULL) {
 		ms_warning("Cannot play file: the stream hasn't been started");
 		return;
@@ -1367,7 +1368,9 @@ void audio_stream_play(AudioStream *st, const char *name){
 			if (st->read_resampler){
 				audio_stream_configure_resampler(st, st->read_resampler,st->soundread,st->ms.encoder);
 			}
+			ms_filter_call_method(st->soundread, MS_PLAYER_SET_LOOP, &loop);
 			ms_filter_call_method_noarg(st->soundread,MS_FILE_PLAYER_START);
+			// printf("====AUDIO_PLAYER_START_LOOP\n");
 		}
 	}else{
 		ms_error("Cannot play file: the stream hasn't been started with"

@@ -80,6 +80,7 @@ int main(int argc, char *argv[]){
 	MSMediaStreamIO io = MS_MEDIA_STREAM_IO_INITIALIZER;
 	int err;
 	
+	bctbx_set_log_level(BCTBX_LOG_DOMAIN, BCTBX_LOG_DEBUG);
 	/*parse command line arguments*/
 	
 	if (argc<4) usage(argv[0]);
